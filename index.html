@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>TextScribe диктант</title>
+<style>
+:root{--bg:#0f1115;--sf:#1a1e26;--sf2:#252a34;--text:#e9ecf2;--mut:#98a1b3;--accent:#5b8dff;--onacc:#fff;--hl:rgba(91,141,255,.22);--bd:#2d3340;--dng:#ff5d5d;color-scheme:dark}
+[data-theme=light]{--bg:#f5f6fa;--sf:#fff;--sf2:#eceef4;--text:#161a22;--mut:#5d6677;--accent:#2f6bff;--hl:rgba(47,107,255,.16);--bd:#d6dae5;color-scheme:light}
+[data-hc="1"][data-theme=dark]{--bg:#000;--sf:#000;--sf2:#111;--text:#fff;--accent:#ffd400;--onacc:#000;--hl:rgba(255,212,0,.25);--bd:#fff;--mut:#ddd}
+[data-hc="1"][data-theme=light]{--bg:#fff;--sf:#fff;--sf2:#f0f0f0;--text:#000;--accent:#0033cc;--onacc:#fff;--hl:rgba(0,51,204,.2);--bd:#000;--mut:#222}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Roboto,"Segoe UI",Arial,sans-serif;overscroll-behavior:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;background:var(--sf2);border:1px solid var(--bd);border-radius:14px;padding:8px 12px;min-height:44px;touch-action:manipulation;cursor:pointer}
+button:active{filter:brightness(1.25)}
+button.prim{background:var(--accent);color:var(--onacc);border-color:transparent;font-weight:700}
+button.dng{color:var(--dng)}
+button.on{background:var(--accent);color:var(--onacc);border-color:transparent}
+input,select,textarea{font:inherit;color:var(--text);background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;min-height:44px;width:100%}
+.view{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);color:var(--text);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.brand{flex:1;font-weight:800;font-size:20px;letter-spacing:.2px}
+.ic{width:46px;padding:0;font-size:20px}
+.edmain{flex:1;display:flex;flex-direction:column;gap:8px;padding:0 12px;min-height:0}
+.title{font-weight:600}
+#ta{flex:1;resize:none;font-size:17px;line-height:1.5;min-height:140px}
+.tools{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tools button{white-space:nowrap;min-height:40px;font-size:14px}
+.stats{color:var(--mut);font-size:13px;padding:0 2px 2px}
+.cta{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px 14px}
+.big{min-height:58px;font-size:18px;font-weight:700}
+/* reader */
+#rd{--sx:1;--sy:1;--w:1}
+.rtop{display:flex;align-items:center;gap:4px;padding:6px 8px}
+.rtop button{min-width:40px;padding:0 6px;min-height:40px;font-size:18px;flex:0 0 auto}
+.rtop .sp{flex:1}
+#rTimer{font-size:13px;color:var(--mut);padding:0 6px}
+.prog{height:4px;background:var(--sf2)}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.rinfo{font-size:12px;color:var(--mut);padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stage{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;position:relative;padding:0 var(--pad,16px);background:var(--rbg,var(--bg));color:var(--rtx,var(--text));touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#stage.sl{overflow-y:hidden;touch-action:none}
+#sizer{position:relative;width:100%;margin:var(--pad,16px) 0 45vh}
+#inner{position:absolute;top:0;left:calc((1 - var(--w)) * 50%);width:calc(var(--w) * 100% / var(--sx));transform-origin:0 0;transform:scale(var(--sx),var(--sy));overflow-wrap:break-word;user-select:none;-webkit-user-select:none}
+.para{margin:0 0 .6em}.para.head{font-weight:700}
+.w{border-radius:.15em;cursor:pointer}
+.cs{background:var(--hl)}
+.cur{background:var(--accent);color:var(--onacc)}
+.nohl .cur{background:none;color:inherit}.nohl .cs,.nohls .cs{background:none}
+.hid{color:transparent!important;background:transparent!important}
+#rHere{position:absolute;right:14px;bottom:210px;z-index:5;border-radius:24px;background:var(--accent);color:var(--onacc);font-weight:700;box-shadow:0 4px 14px #0006}
+.rbot{padding:8px 10px 10px;display:flex;flex-direction:column;gap:8px;background:var(--bg);border-top:1px solid var(--bd)}
+.row{display:grid;gap:8px}
+.r1{grid-template-columns:1fr 2fr 1fr}.r2{grid-template-columns:1fr 1fr 1fr}.r3{grid-template-columns:repeat(4,1fr)}
+.rbot button{min-height:52px;font-size:15px;padding:4px}
+.r1 button{min-height:64px;font-size:16px}
+.r1 .play{font-size:19px;font-weight:800}
+.r3 button{font-size:13px;min-height:46px}
+.noui .rtop,.noui .rbot,.noui .rinfo,.noui .prog{display:none}
+#rShow{position:absolute;top:calc(8px + env(safe-area-inset-top));right:8px;z-index:6;width:42px;min-height:42px;padding:0;opacity:.45;border-radius:21px;display:none}
+.noui #rShow{display:block}
+#lockOv{position:absolute;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:30px;background:transparent}
+#unlock{background:var(--sf);border:2px solid var(--accent);min-height:56px;padding:0 22px;font-weight:700}
+@media (max-height:520px){.rbot{flex-direction:row;flex-wrap:wrap}.rbot .row{flex:1 1 45%}.r1 button{min-height:48px}.rbot button{min-height:42px}.r3{grid-template-columns:repeat(4,1fr)}#rHere{bottom:100px}}
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end}
+.shbg{position:absolute;inset:0;background:#0009}
+.shp{position:relative;width:100%;max-height:88%;display:flex;flex-direction:column;background:var(--bg);border-radius:22px 22px 0 0;border:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom);animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.shh{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--bd);align-items:center}
+#tabs{display:flex;gap:6px;overflow-x:auto;flex:1}
+#tabs button{white-space:nowrap;min-height:38px;padding:4px 12px;font-size:14px}
+#shBody{overflow-y:auto;padding:6px 14px 20px;flex:1}
+.sh{margin:16px 0 4px;color:var(--accent);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.6px}
+.ctl{margin:10px 0}
+.ctl>label,.lbl{display:flex;justify-content:space-between;font-size:14px;color:var(--mut);margin-bottom:4px}
+.lbl b{color:var(--text)}
+.rg{display:flex;gap:6px;align-items:center}
+.rg button{width:44px;padding:0;flex:0 0 auto}
+.rg input[type=range]{padding:0;min-height:34px;flex:1;accent-color:var(--accent);background:none;border:0}
+.chk{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
+.chk input{width:26px;height:26px;min-height:0;accent-color:var(--accent)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;align-items:center}
+.chips button{min-height:38px;padding:2px 12px;white-space:nowrap;font-size:14px;flex:0 0 auto}
+.chips input{width:84px;flex:0 0 auto;min-height:38px;padding:4px 8px}
+.note{font-size:13px;color:var(--mut);background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:8px 10px}
+.item{display:flex;gap:6px;align-items:center;background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:8px;margin:8px 0}
+.item .nm{flex:1;min-width:0;text-align:left;background:none;border:0;padding:4px}
+.item .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.item .nm small{color:var(--mut)}
+.item.act{border-color:var(--accent)}
+.item button.s{width:42px;padding:0}
+#dlg{position:fixed;inset:0;z-index:99;background:#000a;display:flex;align-items:center;justify-content:center;padding:20px}
+.db{background:var(--bg);border:1px solid var(--bd);border-radius:18px;padding:18px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px}
+.dbtn{display:flex;gap:8px;justify-content:flex-end}
+#toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top));transform:translateX(-50%);z-index:120;background:var(--sf2);color:var(--text);border:1px solid var(--bd);border-radius:14px;padding:10px 14px;max-width:92%;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px #0008;font-size:14px}
+#toast button{min-height:34px;padding:2px 10px}
+</style>
+</head>
+<body>
+<div id="ed" class="view">
+  <header class="bar">
+    <button id="bLib" class="ic" aria-label="Библиотека">📚</button>
+    <div class="brand">TextScribe</div>
+    <button id="bNew" class="ic" aria-label="Новый текст">＋</button>
+    <button id="bSet" class="ic" aria-label="Настройки">⚙</button>
+  </header>
+  <main class="edmain">
+    <input id="title" class="title" placeholder="Название текста" aria-label="Название">
+    <textarea id="ta" placeholder="Вставьте или введите текст…" spellcheck="false" aria-label="Текст"></textarea>
+    <div class="tools">
+      <button id="bPaste">📋 Вставить</button><button id="bCopy">⧉ Копировать</button><button id="bClear">🗑 Очистить</button><button id="bImp">⬆ Импорт</button><button id="bExp">⬇ В TXT</button>
+    </div>
+    <div id="stats" class="stats"></div>
+  </main>
+  <footer class="cta">
+    <button id="bRew" class="big">✍ Переписывание</button>
+    <button id="bDict" class="big prim">🎧 Диктант</button>
+  </footer>
+  <input type="file" id="file" accept=".txt,.md,.text,text/plain" hidden>
+</div>
+
+<div id="rd" class="view" hidden>
+  <div class="rtop" id="rTop">
+    <button id="rBack" aria-label="Назад">←</button>
+    <span id="rTimer">⏱ 0:00</span>
+    <span class="sp"></span>
+    <button id="rAuto" aria-label="Автопрокрутка">⏬</button>
+    <button id="rSL" aria-label="Заблокировать прокрутку">📌</button>
+    <button id="rLock" aria-label="Заблокировать нажатия">🔒</button>
+    <button id="rFS" aria-label="Полный экран">⛶</button>
+    <button id="rHide" aria-label="Скрыть панели">👁</button>
+    <button id="rSet" aria-label="Настройки">⚙</button>
+  </div>
+  <div class="prog"><i id="rBar"></i></div>
+  <div class="rinfo" id="rInfo"></div>
+  <div id="stage"><div id="sizer"><div id="inner"></div></div></div>
+  <button id="rHere" hidden>↧ К месту</button>
+  <button id="rShow" aria-label="Показать панели">⋯</button>
+  <div class="rbot" id="rBot">
+    <div class="row r1"><button id="cPW">◀<br><small>слово</small></button><button id="cPlay" class="prim play">▶ Начать диктант</button><button id="cNW">▶<br><small>слово</small></button></div>
+    <div class="row r2"><button id="cRW">↺ Слово</button><button id="cRS">↺ Предложение</button><button id="cStop" class="dng">■ Стоп</button></div>
+    <div class="row r3"><button id="cPP">« абзац</button><button id="cPS">‹ предл.</button><button id="cNS">предл. ›</button><button id="cNP">абзац »</button></div>
+  </div>
+  <div id="lockOv" hidden><button id="unlock">🔓 Удерживайте, чтобы разблокировать</button></div>
+</div>
+
+<div id="sheet" hidden>
+  <div class="shbg" id="shBg"></div>
+  <div class="shp"><div class="shh"><div id="tabs"></div><button id="shClose" class="ic">✕</button></div><div id="shBody"></div></div>
+</div>
+<div id="dlg" hidden><div class="db"><div id="dm"></div><input id="di" hidden><div class="dbtn"><button id="dc">Отмена</button><button id="dok" class="prim">OK</button></div></div></div>
+<div id="toast" hidden></div>
+
+<script>
+(()=>{'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- storage ---------- */
+const mem={};let warned=false;
+const store={
+  get(k,d){try{const v=localStorage.getItem('ts_'+k);return v==null?(k in mem?mem[k]:d):JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
+  set(k,v){mem[k]=v;try{localStorage.setItem('ts_'+k,JSON.stringify(v));return true}catch(e){if(!warned){warned=true;toast('Память браузера недоступна или заполнена — изменения могут не сохраниться')}return false}},
+  del(k){delete mem[k];try{localStorage.removeItem('ts_'+k)}catch(e){}}
+};
+
+/* ---------- defaults ---------- */
+const DEF={theme:'dark',contrast:false,fontSize:34,lineHeight:1.5,letterSpacing:0,wordSpacing:0,font:'sans',bold:false,color:'',bg:'',width:100,align:'left',sx:100,sy:100,pad:16,
+ nbMode:'normal',lines:0,hl:true,hlSentence:true,follow:true,peek:'off',scrollSpeed:30,goal:0,
+ lang:'ru-RU',voice:'',rate:0.9,volume:1,
+ chunk:1,wordPause:2,sentPause:4,paraPause:7,headPause:5,wordRep:1,wordRepDelay:1,sentRep:0,sentRepDelay:3,smart:true,numMult:1.5,skipSym:true,speakPunct:false,autoNext:true,profile:'Обычный диктант'};
+const PROF_DEF={
+ 'Медленный диктант':{chunk:1,wordPause:5,sentPause:8,paraPause:12,headPause:8,wordRep:1,wordRepDelay:1.5,sentRep:0,sentRepDelay:3,smart:true,rate:0.7,numMult:1.5,autoNext:true},
+ 'Обычный диктант':{chunk:1,wordPause:2,sentPause:4,paraPause:7,headPause:5,wordRep:1,wordRepDelay:1,sentRep:0,sentRepDelay:3,smart:true,rate:0.9,numMult:1.5,autoNext:true},
+ 'Быстрый диктант':{chunk:2,wordPause:0.5,sentPause:1.5,paraPause:3,headPause:2,wordRep:1,wordRepDelay:0.5,sentRep:0,sentRepDelay:1,smart:false,rate:1.1,numMult:1,autoNext:true},
+ 'Сложный текст':{chunk:1,wordPause:3,sentPause:6,paraPause:9,headPause:6,wordRep:2,wordRepDelay:1,sentRep:1,sentRepDelay:2,smart:true,rate:0.8,numMult:2,autoNext:true},
+ 'Только чтение':{chunk:0,wordPause:0,sentPause:0.5,paraPause:1,headPause:1,wordRep:1,wordRepDelay:0,sentRep:0,sentRepDelay:0,smart:false,rate:1,numMult:1,autoNext:true}};
+const PK=Object.keys(PROF_DEF['Обычный диктант']);
+const FONTS={sans:['Системный','system-ui,Roboto,Arial,sans-serif'],serif:['С засечками','Georgia,"Times New Roman",serif'],mono:['Моноширинный','ui-monospace,Consolas,"Courier New",monospace'],wide:['Verdana (широкий)','Verdana,Geneva,sans-serif'],round:['Trebuchet','"Trebuchet MS",Tahoma,sans-serif'],hand:['Рукописный','"Segoe Print","Bradley Hand","Comic Sans MS",cursive']};
+const LANGS=[['ru-RU','Русский'],['tg-TJ','Таджикский'],['en-US','English (US)'],['en-GB','English (UK)'],['uz-UZ','Oʻzbek'],['kk-KZ','Қазақша'],['tr-TR','Türkçe'],['de-DE','Deutsch'],['fr-FR','Français'],['es-ES','Español'],['ar-SA','العربية'],['zh-CN','中文']];
+const PUNCT={
+ ru:{'.':'точка',',':'запятая','!':'восклицательный знак','?':'вопросительный знак',':':'двоеточие',';':'точка с запятой','—':'тире','–':'тире','-':'дефис','…':'многоточие','"':'кавычки','«':'кавычки','»':'кавычки','(':'скобка',')':'скобка'},
+ en:{'.':'period',',':'comma','!':'exclamation mark','?':'question mark',':':'colon',';':'semicolon','—':'dash','–':'dash','-':'hyphen','…':'ellipsis','"':'quote','«':'quote','»':'quote','(':'bracket',')':'bracket'},
+ tg:{'.':'нуқта',',':'вергул','!':'нишони хитоб','?':'нишони савол',':':'ду нуқта',';':'нуқта-вергул','—':'тире','–':'тире','-':'дефис','…':'сенуқта','"':'нохунак','«':'нохунак','»':'нохунак','(':'қавс',')':'қавс'}};
+const SAMPLE={ru:'Проверка голоса. Сегодня хорошая погода.',en:'Voice check. The weather is nice today.',tg:'Санҷиши овоз. Имрӯз ҳаво хуб аст.'};
+
+/* ---------- state ---------- */
+let G=Object.assign({},DEF,store.get('G',{}));
+let profiles=Object.assign(JSON.parse(JSON.stringify(PROF_DEF)),store.get('profiles',{}));
+let metas=store.get('docs',[]);
+let hist=store.get('hist',[]);
+let doc=null,txt='',P=G;
+let T={words:[],sents:[],paras:[]},chunks=[],chunkOf=new Int32Array(0),cum=[0],cumTotal=0;
+let cur=0,curB=0,state='idle',runId=0,cancelCb=null,waitCancel=null,utt=null,wake=null;
+let sessionWords=0,sessionStart=0,tmr=null,goalHit=false;
+let inReader=false,locked=false,elMap=new Map(),prevCur=[],prevCs=[],renderedSent=-1,vis=[0,1e9];
+const W=()=>T.words.length;
+const stage=$('#stage'),inner=$('#inner'),sizer=$('#sizer');
+
+/* ---------- ui helpers ---------- */
+let toastT=null;
+function toast(msg,label,fn,ms){const t=$('#toast');t.innerHTML='';const s=document.createElement('span');s.textContent=msg;t.append(s);
+ if(label){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{t.hidden=true;fn&&fn()};t.append(b)}
+ t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||(label?7000:3200))}
+function dlg({msg,input,val='',ok='OK',cancel='Отмена',danger,one}){return new Promise(res=>{
+ const d=$('#dlg'),i=$('#di'),o=$('#dok'),c=$('#dc');$('#dm').textContent=msg;i.hidden=!input;i.value=val;o.textContent=ok;c.textContent=cancel;c.hidden=!!one;o.className=danger?'dng':'prim';d.hidden=false;
+ if(input)setTimeout(()=>{i.focus();i.select()},50);
+ const done=v=>{d.hidden=true;o.onclick=c.onclick=null;i.onkeydown=null;res(v)};
+ o.onclick=()=>done(input?i.value:true);c.onclick=()=>done(input?null:false);i.onkeydown=e=>{if(e.key==='Enter')o.onclick()}})}
+const fmtT=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}ч ${m}м`:m?`${m}м ${String(x).padStart(2,'0')}с`:`${x}с`};
+const mmss=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+
+/* ---------- documents ---------- */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let saveT=null,metaT=null;
+function saveText(){clearTimeout(saveT);saveT=null;if(!doc)return;store.set('t_'+doc.id,txt);doc.updated=Date.now();doc.wc=W();doc.pv=txt.slice(0,80).replace(/\s+/g,' ');store.set('docs',metas)}
+function saveMeta(){clearTimeout(metaT);metaT=null;store.set('docs',metas)}
+function flush(){if(saveT)saveText();if(metaT)saveMeta()}
+const saveSoon=()=>{clearTimeout(saveT);saveT=setTimeout(saveText,400)};
+const metaSoon=()=>{clearTimeout(metaT);metaT=setTimeout(saveMeta,500)};
+function newDoc(name,text){const id=uid();metas.unshift({id,name:name||'Новый текст',updated:Date.now(),pos:0,wc:0,pv:''});store.set('docs',metas);store.set('t_'+id,text||'');return id}
+function openDoc(id){flush();let m=metas.find(x=>x.id===id);if(!m){id=newDoc();m=metas[0]}
+ stopAll();doc=m;txt=store.get('t_'+id,'');if(typeof txt!=='string')txt='';store.set('cur',id);P=doc.own&&doc.S?Object.assign({},DEF,doc.S):G;if(P!==G&&doc.S)doc.S=P;
+ retokenize();cur=clamp(doc.pos||0,0,Math.max(0,W()-1));curB=cur;
+ $('#title').value=doc.name;$('#ta').value=txt;applyView();updateStats()}
+function retokenize(){T=tokenize(txt);rebuildChunks()}
+
+/* ---------- tokenizer ---------- */
+const ABBR=/^(\p{L}\.|\d+\.|(\p{L}{1,3}\.){2,})$/u;
+function tokenize(text){const words=[],sents=[],paras=[];
+ const lines=text.replace(/\r/g,'').split('\n');
+ for(const line of lines){const ws=line.split(/\s+/).filter(Boolean);if(!ws.length)continue;
+  const p=paras.length,ps=words.length;let open=false;
+  for(const w of ws){if(!open){sents.push({start:words.length,end:words.length,p});open=true}
+   words.push({t:w,s:sents.length-1,p});sents[sents.length-1].end=words.length-1;
+   if(/[.!?…。]+["'»”’)\]]*$/u.test(w)&&!ABBR.test(w))open=false}
+  paras.push({start:ps,end:words.length-1,head:ws.length<=8&&!/[.!?…:,;]["»”)]*$/u.test(line.trim())})}
+ return{words,sents,paras}}
+
+/* ---------- chunks / speech text ---------- */
+function rebuildChunks(){chunks=[];chunkOf=new Int32Array(W());const n=+P.chunk;
+ for(let si=0;si<T.sents.length;si++){const s=T.sents[si],par=T.paras[s.p],step=n>0?n:(s.end-s.start+1);
+  for(let a=s.start;a<=s.end;a+=step){const b=Math.min(s.end,a+step-1);
+   chunks.push({a,b,s:si,p:s.p,lastS:b===s.end,lastP:b===par.end,head:par.head});
+   for(let i=a;i<=b;i++)chunkOf[i]=chunks.length-1}}
+ computeCumSoon()}
+let cumT=null;const computeCumSoon=()=>{clearTimeout(cumT);cumT=setTimeout(()=>{computeCum();updateInfo()},150)};
+function computeCum(){cum=new Float64Array(chunks.length+1);let t=0;
+ for(let i=0;i<chunks.length;i++){cum[i]=t;const c=chunks[i],s=spokenText(c.a,c.b);
+  if(s){const sp=s.length/(14*Math.max(.3,P.rate));t+=sp*P.wordRep+(P.wordRep-1)*P.wordRepDelay+calcPause(c,s);
+   if(c.lastS&&P.sentRep>0){const sl=T.sents[c.s];t+=P.sentRep*(P.sentRepDelay+spokenText(sl.start,sl.end).length/(14*Math.max(.3,P.rate)))}}}
+ cum[chunks.length]=t;cumTotal=t}
+function punctLang(){return PUNCT[P.lang.slice(0,2)]||PUNCT.en}
+function spokenText(a,b){const out=[],pl=punctLang();
+ for(let i=a;i<=b;i++){const w=T.words[i].t;
+  if(!/[\p{L}\p{N}]/u.test(w)){if(P.speakPunct){for(const ch of w){const n=pl[ch];if(n)out.push(n)}}else if(!P.skipSym&&w.trim())out.push(w);continue}
+  const m=w.match(/^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/su);const core=m[2];
+  if(P.speakPunct){for(const ch of m[1]){const n=pl[ch];if(n)out.push(n)}out.push(core);for(const ch of m[3]){const n=pl[ch];if(n)out.push(n)}}
+  else out.push(core)}
+ return out.join(' ').trim()}
+function calcPause(c,text){let base,kind='w';
+ if(c.lastP)base=c.head?P.headPause:P.paraPause,kind=c.head?'h':'p';else if(c.lastS)base=P.sentPause,kind='s';else base=P.wordPause;
+ if(P.smart&&base>0){const nw=c.b-c.a+1;
+  if(kind==='w'||kind==='s'&&nw>0&&false)base+=Math.min(base*1.5,Math.max(0,text.length-6*nw)*base*0.08);
+  if(kind==='s'||kind==='p'){const sn=T.sents[c.s],n=sn.end-sn.start+1;base+=Math.min(base,Math.max(0,n-10)*0.05*base)}}
+ if(/\d/.test(text))base*=P.numMult;
+ return base}
+
+/* ---------- reader rendering ---------- */
+function wordsHTML(a,b){const o=[];for(let i=a;i<=b;i++)o.push('<span class="w" data-i="'+i+'">'+esc(T.words[i].t)+'</span>');return o.join(' ')}
+function buildHTML(){prevCur=[];prevCs=[];elMap=new Map();let h='';
+ if(P.nbMode==='single'){const w=T.words[cur];if(w){const s=T.sents[w.s];h='<p class="para">'+wordsHTML(s.start,s.end)+'</p>';renderedSent=w.s}}
+ else{renderedSent=-1;for(const pa of T.paras)h+='<p class="para'+(pa.head?' head':'')+'">'+wordsHTML(pa.start,pa.end)+'</p>'}
+ inner.innerHTML=h;inner.querySelectorAll('.w').forEach(e=>elMap.set(+e.dataset.i,e));vis=[0,1e9]}
+function renderReader(){buildHTML();applyView();mark(cur,curB);applyPeek(true);updateSizer()}
+function applyView(){const R=$('#rd'),sx=P.sx/100,sy=P.sy/100;
+ document.documentElement.dataset.theme=P.theme;document.documentElement.dataset.hc=P.contrast?'1':'0';
+ const tc=P.theme==='light'?'#f5f6fa':'#0f1115';const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.content=tc;
+ R.style.setProperty('--sx',sx);R.style.setProperty('--sy',sy);R.style.setProperty('--w',P.width/100);R.style.setProperty('--pad',P.pad+'px');
+ let fs=P.fontSize;if(P.lines>0&&stage.clientHeight>0)fs=Math.max(10,(stage.clientHeight-2*P.pad)/(P.lines*P.lineHeight*sy));
+ const s=inner.style;s.fontSize=fs+'px';s.lineHeight=P.lineHeight;s.letterSpacing=P.letterSpacing+'em';s.wordSpacing=P.wordSpacing+'em';
+ s.fontFamily=FONTS[P.font]?FONTS[P.font][1]:FONTS.sans[1];s.fontWeight=P.bold?'700':'400';s.textAlign=P.align;
+ if(P.color)R.style.setProperty('--rtx',P.color);else R.style.removeProperty('--rtx');
+ if(P.bg)R.style.setProperty('--rbg',P.bg);else R.style.removeProperty('--rbg');
+ $('#rd').style.background=P.bg||'';inner.classList.toggle('nohl',!P.hl);inner.classList.toggle('nohls',!P.hlSentence);
+ stage.classList.toggle('sl',!!P._sl);updateSizer()}
+function updateSizer(){sizer.style.height=Math.ceil(inner.offsetHeight*P.sy/100)+'px'}
+function mark(a,b){prevCur.forEach(e=>e.classList.remove('cur'));prevCs.forEach(e=>e.classList.remove('cs'));prevCur=[];prevCs=[];
+ if(!W())return;const w=T.words[a];if(!w)return;
+ if(P.nbMode==='single'&&renderedSent!==w.s){buildHTML();updateSizer()}
+ const s=T.sents[w.s];
+ for(let i=s.start;i<=s.end;i++){const e=elMap.get(i);if(e){e.classList.add('cs');prevCs.push(e)}}
+ for(let i=a;i<=b;i++){const e=elMap.get(i);if(e){e.classList.add('cur');prevCur.push(e)}}}
+function peekRange(){if(!(P.peek!=='off'&&state!=='idle'&&W()))return[0,1e9];const ci=chunkOf[cur],c=chunks[ci];if(!c)return[0,1e9];
+ if(P.peek==='hide')return[0,c.b];if(P.peek==='next'){const n=chunks[ci+1];return[0,n?n.b:c.b]}return[c.a,c.b]}
+function applyPeek(full){const[lo,hi]=peekRange();
+ if(full){elMap.forEach((e,i)=>e.classList.toggle('hid',i<lo||i>hi));vis=[lo,hi];return}
+ const set=(a,b,h)=>{for(let i=Math.max(a,0);i<=Math.min(b,W()-1);i++){const e=elMap.get(i);if(e)e.classList.toggle('hid',h)}};
+ set(Math.min(vis[0],lo),Math.max(vis[0],lo)-1,lo>vis[0]);set(Math.min(vis[1],hi)+1,Math.max(vis[1],hi),hi<vis[1]);vis=[lo,hi]}
+function scrollToCur(force,instant){const e=elMap.get(cur);if(!e||!inReader)return;
+ const r=e.getBoundingClientRect(),sr=stage.getBoundingClientRect();if(!sr.height)return;const rel=(r.top-sr.top)/sr.height;
+ if(!force&&rel>0.05&&rel<0.55&&r.bottom<sr.bottom-30)return;
+ stage.scrollTo({top:Math.max(0,stage.scrollTop+(r.top-sr.top)-sr.height*0.3),behavior:instant?'auto':'smooth'})}
+function setCursor(a,b,scroll,force){cur=a;curB=b;doc.pos=a;mark(a,b);applyPeek(false);updateInfo();metaSoon();if(scroll)scrollToCur(force)}
+function updateInfo(){const n=W();const info=$('#rInfo');
+ if(!n){info.textContent='Текст пуст — добавьте текст в редакторе';$('#rBar').style.width='0';return}
+ const w=T.words[cur],pct=Math.round((cur+1)/n*100),rem=cumTotal-(cum[chunkOf[cur]]||0);
+ let s=`Слово ${cur+1}/${n} · Предл. ${w.s+1}/${T.sents.length} · Абз. ${w.p+1}/${T.paras.length} · ${pct}%`;
+ if(cumTotal>0)s+=` · осталось ~${fmtT(rem)}`;if(P.goal>0)s+=` · цель ${Math.min(sessionWords,P.goal)}/${P.goal}`;
+ info.textContent=s;$('#rBar').style.width=pct+'%'}
+function updateStats(){const n=W();const t=cumTotal;$('#stats').textContent=n?`Слов: ${n} · предложений: ${T.sents.length} · абзацев: ${T.paras.length} · знаков: ${txt.length}`+(t?` · диктант ~${fmtT(t)}`:'')+(doc.pos>0?` · остановились на слове ${doc.pos+1}`:''):'Текст пуст — вставьте или введите текст'}
+
+/* ---------- speech ---------- */
+const hasTTS='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
+let voices=[];
+function loadVoices(){if(!hasTTS)return;try{voices=speechSynthesis.getVoices()||[]}catch(e){voices=[]}}
+if(hasTTS){loadVoices();try{speechSynthesis.onvoiceschanged=()=>{loadVoices();if(!$('#sheet').hidden&&tab==='voice')renderTab()}}catch(e){}}
+function voicesFor(l){const p=l.slice(0,2).toLowerCase();return voices.filter(v=>v.lang&&v.lang.slice(0,2).toLowerCase()===p)}
+function pickVoice(){if(P.voice){const v=voices.find(v=>v.voiceURI===P.voice||v.name===P.voice);if(v)return v}
+ const exact=voices.find(v=>v.lang&&v.lang.replace('_','-').toLowerCase()===P.lang.toLowerCase());return exact||voicesFor(P.lang)[0]||null}
+function speak(text){return new Promise(res=>{if(!hasTTS||!text){res();return}
+ const u=new SpeechSynthesisUtterance(text);u.lang=P.lang;const v=pickVoice();if(v){u.voice=v;u.lang=v.lang}u.rate=P.rate;u.volume=P.volume;
+ let done=false,tm;const fin=()=>{if(done)return;done=true;clearTimeout(tm);if(cancelCb===fin)cancelCb=null;res()};
+ u.onend=fin;u.onerror=fin;utt=u;cancelCb=fin;
+ tm=setTimeout(()=>{try{speechSynthesis.cancel()}catch(e){}fin()},Math.max(2500,text.length*130/Math.max(.3,P.rate))+4000);
+ try{speechSynthesis.speak(u)}catch(e){fin()}})}
+function wait(ms){return new Promise(res=>{const t=setTimeout(()=>{waitCancel=null;res()},ms);waitCancel=()=>{clearTimeout(t);res()}})}
+function abortRun(){runId++;try{hasTTS&&speechSynthesis.cancel()}catch(e){}if(cancelCb)cancelCb();if(waitCancel){const w=waitCancel;waitCancel=null;w()}}
+async function wl(on){try{if(on){if(navigator.wakeLock&&!wake)wake=await navigator.wakeLock.request('screen')}else if(wake){await wake.release();wake=null}}catch(e){wake=null}}
+function setState(s){state=s;const b=$('#cPlay');
+ b.textContent=s==='running'?'⏸ Пауза':s==='paused'?'▶ Продолжить':'▶ Начать диктант';wl(s==='running');applyPeek(true)}
+async function run(startCi){abortRun();const id=runId;setState('running');await delay(70);if(id!==runId)return;
+ let ci=clamp(startCi,0,chunks.length-1);
+ while(ci<chunks.length){if(id!==runId)return;
+  const c=chunks[ci];setCursor(c.a,c.b,P.follow);
+  const text=spokenText(c.a,c.b);
+  if(text){for(let r=0;r<P.wordRep;r++){await speak(text);if(id!==runId)return;if(r<P.wordRep-1){await wait(P.wordRepDelay*1000);if(id!==runId)return}}
+   sessionWords+=c.b-c.a+1;updateInfo();
+   if(P.goal>0&&!goalHit&&sessionWords>=P.goal){goalHit=true;toast('🎯 Цель достигнута: '+P.goal+' слов!')}
+   if(c.lastS&&P.sentRep>0){const sl=T.sents[c.s],st=spokenText(sl.start,sl.end);
+    for(let k=0;k<P.sentRep;k++){setCursor(sl.start,sl.end,P.follow);await wait(P.sentRepDelay*1000);if(id!==runId)return;await speak(st);if(id!==runId)return}
+    setCursor(c.a,c.b,false)}
+   await wait(calcPause(c,text)*1000)}else await wait(0);
+  if(id!==runId)return;
+  if(c.lastS&&!P.autoNext&&ci<chunks.length-1){setCursor(chunks[ci+1].a,chunks[ci+1].b,P.follow);setState('paused');toast('Предложение продиктовано. Нажмите «Продолжить»');return}
+  ci++}
+ if(id!==runId)return;finishDict()}
+function finishDict(){const sec=Math.round((Date.now()-sessionStart)/1000);setState('idle');
+ hist.unshift({name:doc.name,date:Date.now(),words:sessionWords,sec});hist=hist.slice(0,100);store.set('hist',hist);
+ doc.pos=0;setCursor(0,chunks[0]?chunks[0].b:0,true,true);saveMeta();
+ dlg({msg:`✅ Диктант завершён!\nСлов продиктовано: ${sessionWords}\nВремя занятия: ${mmss(sec)}`,one:true,ok:'Отлично'})}
+function stopAll(){abortRun();if(state!=='idle')setState('idle')}
+function playBtn(){if(!W()){toast('Нет текста для диктанта');return}
+ if(!hasTTS){toast('Этот браузер не поддерживает синтез речи (Web Speech API)');return}
+ if(state==='running'){abortRun();setState('paused')}else run(chunkOf[cur])}
+function goChunk(ci){ci=clamp(ci,0,chunks.length-1);const c=chunks[ci];if(!c)return;if(state==='running')run(ci);else setCursor(c.a,c.b,true,true)}
+const goWord=i=>{if(!W())return;goChunk(chunkOf[clamp(i,0,W()-1)])};
+function nextW(){goChunk(chunkOf[cur]+1)}
+function prevW(){goChunk(chunkOf[cur]-1)}
+function nextS(){const s=T.words[cur]?.s;if(s==null||s>=T.sents.length-1)return;goWord(T.sents[s+1].start)}
+function prevS(){const w=T.words[cur];if(!w)return;const s=T.sents[w.s];goWord(chunks[chunkOf[cur]].a>s.start?s.start:(w.s>0?T.sents[w.s-1].start:0))}
+function nextP(){const p=T.words[cur]?.p;if(p==null||p>=T.paras.length-1)return;goWord(T.paras[p+1].start)}
+function prevP(){const w=T.words[cur];if(!w)return;const p=T.paras[w.p];goWord(chunks[chunkOf[cur]].a>p.start?p.start:(w.p>0?T.paras[w.p-1].start:0))}
+async function oneShot(text,mk){if(!hasTTS){toast('Синтез речи недоступен');return}abortRun();const id=runId;await delay(70);if(id!==runId)return;if(mk)mk();await speak(text)}
+function repWord(){if(!W())return;if(state==='running')run(chunkOf[cur]);else{const c=chunks[chunkOf[cur]];oneShot(spokenText(c.a,c.b)||T.words[cur].t)}}
+function repSent(){if(!W())return;const s=T.sents[T.words[cur].s];if(state==='running')run(chunkOf[s.start]);else oneShot(spokenText(s.start,s.end),()=>setCursor(s.start,s.start,true,true))}
+
+/* ---------- reader open / close ---------- */
+function tick(){const s=Math.round((Date.now()-sessionStart)/1000);$('#rTimer').textContent='⏱ '+mmss(s)}
+function openReader(autostart){if(!doc)return;flush();inReader=true;$('#ed').hidden=true;$('#rd').hidden=false;
+ sessionWords=0;goalHit=false;sessionStart=Date.now();clearInterval(tmr);tmr=setInterval(tick,1000);tick();
+ try{history.pushState({r:1},'')}catch(e){}
+ renderReader();setCursor(cur,Math.max(cur,curB<cur?cur:curB),false);requestAnimationFrame(()=>{applyView();scrollToCur(true,true);if(autostart)playBtn()})}
+function closeReader(fromPop){if(!inReader)return;stopAll();inReader=false;setAuto(false);setLock(false);$('#rd').classList.remove('noui');clearInterval(tmr);
+ try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+ $('#rd').hidden=true;$('#ed').hidden=false;flush();updateStats();if(!fromPop){try{history.back()}catch(e){}}}
+window.addEventListener('popstate',()=>{if(inReader)closeReader(true);else if(!$('#sheet').hidden)hideSheet()});
+
+/* autoscroll, lock, pinch */
+let auto=false,asPos=0,asLast=0,asRaf=0;
+function setAuto(on){auto=on;$('#rAuto').classList.toggle('on',on);cancelAnimationFrame(asRaf);if(on){asPos=stage.scrollTop;asLast=performance.now();asRaf=requestAnimationFrame(asStep)}}
+function asStep(t){if(!auto)return;const dt=(t-asLast)/1000;asLast=t;if(Math.abs(stage.scrollTop-asPos)>2)asPos=stage.scrollTop;
+ asPos+=P.scrollSpeed*dt;stage.scrollTop=asPos;if(stage.scrollTop+stage.clientHeight>=stage.scrollHeight-2&&asPos>stage.scrollTop+2){setAuto(false);return}asRaf=requestAnimationFrame(asStep)}
+function setLock(on){locked=on;$('#lockOv').hidden=!on}
+let holdT=null;const ul=$('#unlock');
+ul.addEventListener('pointerdown',()=>{holdT=setTimeout(()=>{setLock(false);toast('Разблокировано')},700)});
+['pointerup','pointercancel','pointerleave'].forEach(e=>ul.addEventListener(e,()=>clearTimeout(holdT)));
+let pd=0,pfs=0;
+const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+stage.addEventListener('touchstart',e=>{if(e.touches.length===2){pd=dist(e.touches);pfs=P.fontSize}},{passive:true});
+stage.addEventListener('touchmove',e=>{if(e.touches.length===2&&pd&&P.lines===0){e.preventDefault();P.fontSize=Math.round(clamp(pfs*dist(e.touches)/pd,12,160));applyView()}},{passive:false});
+stage.addEventListener('touchend',e=>{if(pd&&e.touches.length<2){pd=0;saveP()}});
+let scT=0;stage.addEventListener('scroll',()=>{if(scT)return;scT=requestAnimationFrame(()=>{scT=0;const e=elMap.get(cur);if(!e){$('#rHere').hidden=true;return}
+ const r=e.getBoundingClientRect(),sr=stage.getBoundingClientRect();$('#rHere').hidden=!(r.bottom<sr.top||r.top>sr.bottom)})},{passive:true});
+stage.addEventListener('click',e=>{if(locked)return;const w=e.target.closest&&e.target.closest('.w');if(w&&inner.contains(w))goWord(+w.dataset.i)});
+if(window.ResizeObserver){new ResizeObserver(updateSizer).observe(inner);new ResizeObserver(()=>{if(inReader&&P.lines>0)applyView()}).observe(stage)}
+window.addEventListener('resize',()=>{if(inReader){applyView()}});
+
+/* ---------- settings ---------- */
+function saveP(){if(P===G)store.set('G',G);else{doc.S=P;saveMeta()}}
+const VIEWK=['theme','contrast','fontSize','lineHeight','letterSpacing','wordSpacing','font','bold','color','bg','width','align','sx','sy','pad','lines','hl','hlSentence'];
+function setP(k,v,norender){P[k]=v;saveP();
+ if(VIEWK.includes(k))applyView();
+ if(k==='nbMode')renderReader();
+ if(k==='peek')applyPeek(true);
+ if(k==='chunk'){const w=cur;rebuildChunks();if(state==='running')run(chunkOf[w])}
+ if(['wordPause','sentPause','paraPause','headPause','wordRep','wordRepDelay','sentRep','sentRepDelay','smart','numMult','skipSym','speakPunct','rate','lang'].includes(k)){rebuildChunks()}
+ if(k==='scrollSpeed'&&auto)asPos=stage.scrollTop;
+ if(!norender)updateStats()}
+const PAUSES=[0.5,1,2,3,5,7,10];
+const SCHEMA={
+ view:[{h:'Масштаб букв'},
+  {k:'sx',t:'range',l:'Ширина букв (по горизонтали), %',min:50,max:300,step:5},
+  {k:'sy',t:'range',l:'Высота букв (по вертикали), %',min:50,max:300,step:5},
+  {t:'btn',l:'↺ Сбросить масштаб (100% / 100%)',fn:()=>{setP('sx',100);setP('sy',100);renderTab()}},
+  {h:'Шрифт'},
+  {k:'fontSize',t:'range',l:'Размер шрифта, px',min:14,max:140,step:1},
+  {k:'lineHeight',t:'range',l:'Межстрочный интервал',min:1,max:3,step:0.05},
+  {k:'letterSpacing',t:'range',l:'Расстояние между буквами, em',min:-0.05,max:0.5,step:0.01},
+  {k:'wordSpacing',t:'range',l:'Расстояние между словами, em',min:0,max:1.5,step:0.05},
+  {k:'font',t:'select',l:'Шрифт',opts:Object.entries(FONTS).map(([k,v])=>[k,v[0]])},
+  {k:'bold',t:'check',l:'Жирный текст'},
+  {k:'align',t:'select',l:'Выравнивание',opts:[['left','По левому краю'],['center','По центру'],['right','По правому краю'],['justify','По ширине']]},
+  {k:'width',t:'range',l:'Ширина текстового блока, %',min:40,max:100,step:2},
+  {k:'pad',t:'range',l:'Отступы от краёв, px',min:0,max:64,step:2},
+  {h:'Цвета и тема'},
+  {k:'theme',t:'select',l:'Тема',opts:[['dark','Тёмная'],['light','Светлая']]},
+  {k:'contrast',t:'check',l:'Высокая контрастность'},
+  {k:'color',t:'color',l:'Цвет текста',def:'#ffffff'},{k:'bg',t:'color',l:'Цвет фона',def:'#000000'}],
+ nb:[{h:'Режим «Тетрадь»'},
+  {k:'nbMode',t:'select',l:'Вариант отображения',opts:[['normal','Обычный текст'],['spaced','Увеличенный межстрочный интервал'],['single','Одно предложение на экране']]},
+  {k:'lines',t:'range',l:'Строк на экране (0 = выкл, размер подбирается)',min:0,max:20,step:1},
+  {h:'Подсветка и подсказки'},
+  {k:'hl',t:'check',l:'Подсвечивать текущее слово'},{k:'hlSentence',t:'check',l:'Подсвечивать текущее предложение'},
+  {k:'follow',t:'check',l:'Автоматически прокручивать к текущему слову'},
+  {k:'peek',t:'select',l:'Слушать, не подглядывая',opts:[['off','Показывать весь текст'],['hide','Скрывать следующие слова'],['next','Показывать только одно следующее'],['current','Виден только текущий фрагмент']]},
+  {h:'Автопрокрутка'},{k:'scrollSpeed',t:'range',l:'Скорость автопрокрутки, px/с',min:5,max:200,step:5},
+  {t:'note',l:'Кнопки сверху: ⏬ автопрокрутка, 📌 блок прокрутки, 🔒 блок нажатий (разблокировка — удержанием), ⛶ полный экран, 👁 скрыть панели. Щипок двумя пальцами по тексту меняет размер.'}],
+ dict:[{t:'profiles'},{h:'Фрагмент'},
+  {k:'chunk',t:'select',num:1,l:'Диктовать за раз',opts:[[1,'1 слово'],[2,'2 слова'],[3,'3 слова'],[5,'5 слов'],[0,'Целое предложение']]},
+  {h:'Паузы (секунды) — независимые'},
+  {k:'wordPause',t:'pause',l:'Между словами'},{k:'sentPause',t:'pause',l:'Между предложениями'},{k:'paraPause',t:'pause',l:'Между абзацами'},{k:'headPause',t:'pause',l:'После заголовков'},
+  {k:'smart',t:'check',l:'Умная пауза (длинные слова и предложения — дольше)'},
+  {k:'numMult',t:'range',l:'Множитель паузы после чисел',min:1,max:3,step:0.1},
+  {h:'Повторы'},
+  {k:'wordRep',t:'select',num:1,l:'Повторять каждый фрагмент',opts:[[1,'1 раз (без повтора)'],[2,'2 раза'],[3,'3 раза']]},
+  {k:'wordRepDelay',t:'range',l:'Задержка между повторами, с',min:0,max:10,step:0.5},
+  {k:'sentRep',t:'select',num:1,l:'Повторять предложение целиком после диктовки',opts:[[0,'Нет'],[1,'1 раз'],[2,'2 раза']]},
+  {k:'sentRepDelay',t:'range',l:'Задержка перед повтором предложения, с',min:0,max:15,step:0.5},
+  {h:'Текст'},
+  {k:'autoNext',t:'check',l:'Автоматически переходить к следующему предложению'},
+  {k:'speakPunct',t:'check',l:'Произносить названия знаков препинания'},
+  {k:'skipSym',t:'check',l:'Пропускать отдельные символы (—, №, *…)'},
+  {k:'goal',t:'range',l:'Цель занятия, слов (0 = нет)',min:0,max:1000,step:10}],
+ voice:[{h:'Голос'},{k:'lang',t:'select',l:'Язык озвучивания',opts:LANGS},{t:'voices'},
+  {k:'rate',t:'range',l:'Скорость речи',min:0.3,max:2,step:0.05},{k:'volume',t:'range',l:'Громкость',min:0,max:1,step:0.05},
+  {t:'btn',l:'🔊 Проверить голос',fn:testVoice},{t:'voicenote'}],
+ more:[{h:'Этот текст'},{t:'perdoc'},{t:'btn',l:'⏮ Начать диктант с начала',fn:()=>{stopAll();goWord(0);hideSheet()}},
+  {h:'Настройки'},{t:'btn',l:'Сбросить все настройки',fn:resetAll,cls:'dng'},
+  {t:'note',l:'Тексты и настройки хранятся только в этом браузере на вашем устройстве и никуда не отправляются.'}]};
+let tab='view',sheetKind='set';
+function testVoice(){oneShot(SAMPLE[P.lang.slice(0,2)]||SAMPLE.en)}
+async function resetAll(){if(!await dlg({msg:'Сбросить все настройки к значениям по умолчанию?',ok:'Сбросить',danger:1}))return;
+ Object.keys(DEF).forEach(k=>P[k]=DEF[k]);delete P._sl;saveP();rebuildChunks();renderReader();renderTab()}
+function mkBtn(l,fn,cls){const b=document.createElement('button');b.textContent=l;b.onclick=fn;if(cls)b.className=cls;return b}
+function ctl(it){const d=document.createElement('div');d.className='ctl';
+ if(it.h){d.className='sh';d.textContent=it.h;return d}
+ if(it.t==='btn'){d.append(mkBtn(it.l,it.fn,it.cls));d.firstChild.style.width='100%';return d}
+ if(it.t==='note'){d.className='note';d.textContent=it.l;return d}
+ if(it.t==='profiles'){d.innerHTML='<div class="lbl"><span>Профиль диктанта</span></div>';const c=document.createElement('div');c.className='chips';
+  Object.keys(profiles).forEach(n=>{const b=mkBtn(n,()=>{Object.assign(P,profiles[n]);P.profile=n;saveP();rebuildChunks();renderTab();toast('Профиль: '+n)});if(P.profile===n)b.classList.add('on');c.append(b)});
+  d.append(c);const sv=mkBtn('💾 Сохранить текущие значения в профиль «'+P.profile+'»',()=>{const o={};PK.forEach(k=>o[k]=P[k]);profiles[P.profile]=o;store.set('profiles',profiles);toast('Профиль сохранён')});sv.style.cssText='width:100%;margin-top:6px';d.append(sv);return d}
+ if(it.t==='perdoc'){d.className='ctl chk';d.innerHTML='<span>Индивидуальные настройки для этого текста</span>';const i=document.createElement('input');i.type='checkbox';i.checked=!!doc.own;
+  i.onchange=()=>{doc.own=i.checked;if(doc.own){doc.S=Object.assign({},G);P=doc.S}else{P=G}saveMeta();applyView();rebuildChunks();renderReader();renderTab()};d.append(i);return d}
+ if(it.t==='voices'){const vs=voicesFor(P.lang);const l=document.createElement('label');l.className='lbl';l.textContent='Голос';const s=document.createElement('select');
+  s.innerHTML='<option value="">Автоматически</option>'+vs.map(v=>`<option value="${esc(v.voiceURI||v.name)}">${esc(v.name)} (${esc(v.lang)}${v.localService?', на устройстве':', онлайн'})</option>`).join('');
+  s.value=P.voice||'';if(s.value!==(P.voice||''))s.value='';s.onchange=()=>setP('voice',s.value,1);d.append(l,s);return d}
+ if(it.t==='voicenote'){d.className='note';const vs=voicesFor(P.lang);
+  d.textContent=!hasTTS?'⚠ Этот браузер не поддерживает синтез речи. Диктант недоступен — откройте приложение в Chrome на Android.':
+   vs.length?'Найдено голосов для выбранного языка: '+vs.length+'. Голоса «онлайн» требуют интернета; «на устройстве» работают без сети (если голосовые данные скачаны в настройках Android → Синтез речи).':
+   '⚠ Для выбранного языка голосов не найдено. Браузер попробует озвучить текст голосом по умолчанию — для таджикского и других языков установите голос в Android: Настройки → Язык → Синтез речи (Google), либо выберите русский голос.';return d}
+ const v=P[it.k];
+ if(it.t==='range'){const l=document.createElement('label');l.innerHTML=`<span>${it.l}</span><b></b>`;const b=l.querySelector('b');const dec=it.step<1?(String(it.step).split('.')[1]||'').length:0;
+  const fmt=x=>(+x).toFixed(dec);b.textContent=fmt(v);
+  const r=document.createElement('input');r.type='range';r.min=it.min;r.max=it.max;r.step=it.step;r.value=v;
+  const set=x=>{x=clamp(Math.round(x/it.step)*it.step,it.min,it.max);x=+x.toFixed(4);r.value=x;b.textContent=fmt(x);setP(it.k,x)};
+  r.oninput=()=>set(+r.value);const row=document.createElement('div');row.className='rg';
+  row.append(mkBtn('−',()=>set(+r.value-it.step)),r,mkBtn('+',()=>set(+r.value+it.step)));d.append(l,row);return d}
+ if(it.t==='select'){const l=document.createElement('label');l.textContent=it.l;const s=document.createElement('select');
+  s.innerHTML=it.opts.map(o=>`<option value="${o[0]}">${esc(o[1])}</option>`).join('');s.value=v;s.onchange=()=>{setP(it.k,it.num?+s.value:s.value);if(it.k==='lang')renderTab()};d.append(l,s);return d}
+ if(it.t==='check'){d.className='ctl chk';const sp=document.createElement('span');sp.textContent=it.l;const i=document.createElement('input');i.type='checkbox';i.checked=!!v;i.onchange=()=>setP(it.k,i.checked);d.append(sp,i);return d}
+ if(it.t==='color'){const l=document.createElement('label');l.textContent=it.l+(v?'':' (по теме)');const row=document.createElement('div');row.className='rg';
+  const i=document.createElement('input');i.type='color';i.value=v||it.def;i.style.padding='2px';i.oninput=()=>setP(it.k,i.value);row.append(i,mkBtn('Сброс',()=>{setP(it.k,'');renderTab()}));row.lastChild.style.width='auto';d.append(l,row);return d}
+ if(it.t==='pause'){const l=document.createElement('div');l.className='lbl';l.innerHTML=`<span>${it.l}</span><b>${v} с</b>`;const c=document.createElement('div');c.className='chips';
+  PAUSES.forEach(p=>{const b=mkBtn(String(p).replace('.',','),()=>{setP(it.k,p);renderTab()});if(+v===p)b.classList.add('on');c.append(b)});
+  const i=document.createElement('input');i.type='number';i.min=0;i.max=120;i.step=0.1;i.value=v;i.inputMode='decimal';i.title='Своё значение';
+  i.onchange=()=>{const x=clamp(parseFloat(String(i.value).replace(',','.'))||0,0,120);setP(it.k,x);renderTab()};c.append(i);d.append(l,c);return d}
+ return d}
+function renderTab(){const body=$('#shBody');const sc=body.scrollTop;body.innerHTML='';
+ const tabs=$('#tabs');
+ if(sheetKind==='set'){const names={view:'Вид',nb:'Тетрадь',dict:'Диктант',voice:'Голос',more:'Ещё'};
+  tabs.innerHTML='';Object.keys(names).forEach(k=>{const b=mkBtn(names[k],()=>{tab=k;renderTab()});if(k===tab)b.classList.add('on');tabs.append(b)});
+  (SCHEMA[tab]||[]).forEach(it=>body.append(ctl(it)))}
+ else{tabs.innerHTML='';[['docs','Тексты'],['hist','История']].forEach(([k,n])=>{const b=mkBtn(n,()=>{tab=k;renderTab()});if(k===tab)b.classList.add('on');tabs.append(b)});
+  if(tab==='docs')renderLib(body);else renderHist(body)}
+ body.scrollTop=sc}
+function renderLib(body){const nb=mkBtn('＋ Новый текст',async()=>{const n=await dlg({msg:'Название нового текста',input:1,val:'Новый текст',ok:'Создать'});if(n==null)return;openDoc(newDoc(n.trim()||'Новый текст'));hideSheet();$('#ta').focus()});nb.className='prim';nb.style.width='100%';body.append(nb);
+ [...metas].sort((a,b)=>b.updated-a.updated).forEach(m=>{const it=document.createElement('div');it.className='item'+(doc&&m.id===doc.id?' act':'');
+  const o=document.createElement('button');o.className='nm';o.innerHTML=`<b>${esc(m.name)}</b><small>${m.wc||0} слов${m.pos?' · позиция '+(m.pos+1):''} · ${esc(m.pv||'пусто')}</small>`;
+  o.onclick=()=>{openDoc(m.id);if(inReader){renderReader();setCursor(cur,cur,false);scrollToCur(true,true)}hideSheet()};
+  const rn=mkBtn('✎',async()=>{const n=await dlg({msg:'Новое название',input:1,val:m.name,ok:'Сохранить'});if(n==null||!n.trim())return;m.name=n.trim();saveMeta();if(doc===m)$('#title').value=m.name;renderTab()});rn.className='s';rn.setAttribute('aria-label','Переименовать');
+  const dl=mkBtn('🗑',async()=>{if(!await dlg({msg:`Удалить «${m.name}»? Это действие нельзя отменить.`,ok:'Удалить',danger:1}))return;
+   metas=metas.filter(x=>x!==m);store.del('t_'+m.id);store.set('docs',metas);
+   if(doc===m){doc=null;openDoc(metas[0]?metas[0].id:newDoc())}else store.set('docs',metas);renderTab()});dl.className='s dng';dl.setAttribute('aria-label','Удалить');
+  it.append(o,rn,dl);body.append(it)})}
+function renderHist(body){if(!hist.length){const n=document.createElement('div');n.className='note';n.textContent='Завершённых диктантов пока нет.';body.append(n);return}
+ hist.forEach(h=>{const it=document.createElement('div');it.className='item';it.innerHTML=`<div class="nm"><b>${esc(h.name)}</b><small>${new Date(h.date).toLocaleString('ru-RU')} · ${h.words} слов · ${mmss(h.sec)}</small></div>`;body.append(it)});
+ const c=mkBtn('Очистить историю',async()=>{if(await dlg({msg:'Очистить историю диктантов?',ok:'Очистить',danger:1})){hist=[];store.set('hist',hist);renderTab()}});c.className='dng';c.style.width='100%';body.append(c)}
+function showSheet(kind,t){sheetKind=kind;tab=t||(kind==='set'?tab:'docs');if(sheetKind==='set'&&!SCHEMA[tab])tab='view';$('#sheet').hidden=false;renderTab();try{history.pushState({s:1},'')}catch(e){}}
+function hideSheet(){if($('#sheet').hidden)return;$('#sheet').hidden=true;computeCum();updateInfo();updateStats()}
+$('#shBg').onclick=$('#shClose').onclick=hideSheet;
+
+/* ---------- editor wiring ---------- */
+const ta=$('#ta');let tokT=null;
+ta.addEventListener('input',()=>{txt=ta.value;saveSoon();clearTimeout(tokT);tokT=setTimeout(()=>{retokenize();cur=clamp(cur,0,Math.max(0,W()-1));curB=cur;doc.pos=cur;updateStats()},300)});
+$('#title').addEventListener('input',e=>{if(doc){doc.name=e.target.value||'Без названия';metaSoon()}});
+function setText(t){txt=t;ta.value=t;retokenize();cur=curB=0;doc.pos=0;saveText();updateStats()}
+$('#bPaste').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t){toast('Буфер обмена пуст');return}
+  const s=ta.selectionStart??ta.value.length,e=ta.selectionEnd??s;ta.setRangeText(t,s,e,'end');ta.dispatchEvent(new Event('input'));toast('Вставлено')}
+ catch(e){ta.focus();toast('Браузер не дал доступ к буферу. Нажмите и удерживайте поле → «Вставить»')}};
+$('#bCopy').onclick=async()=>{if(!txt){toast('Нечего копировать');return}try{await navigator.clipboard.writeText(txt);toast('Текст скопирован')}catch(e){ta.select();try{document.execCommand('copy');toast('Текст скопирован')}catch(_){toast('Не удалось скопировать')}}};
+$('#bClear').onclick=()=>{if(!txt)return;const bak=txt;setText('');toast('Текст очищен','Отменить',()=>setText(bak),8000)};
+$('#bImp').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const t=await f.text();openDoc(newDoc(f.name.replace(/\.[^.]+$/,''),t));toast('Импортировано: '+f.name)}catch(err){toast('Не удалось прочитать файл')}};
+$('#bExp').onclick=()=>{if(!txt){toast('Нечего экспортировать');return}try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download=(doc.name||'text').replace(/[\\/:*?"<>|]+/g,'_')+'.txt';document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){toast('Скачивание недоступно в этом режиме — используйте «Копировать»')}};
+$('#bNew').onclick=async()=>{const n=await dlg({msg:'Название нового текста',input:1,val:'Новый текст',ok:'Создать'});if(n==null)return;openDoc(newDoc(n.trim()||'Новый текст'));ta.focus()};
+$('#bLib').onclick=()=>showSheet('lib','docs');
+$('#bSet').onclick=()=>showSheet('set');
+$('#bRew').onclick=()=>{if(!txt.trim()){toast('Сначала вставьте текст');return}openReader(false)};
+$('#bDict').onclick=()=>{if(!txt.trim()){toast('Сначала вставьте текст');return}openReader(true)};
+
+/* reader buttons */
+$('#rBack').onclick=()=>closeReader();
+$('#rSet').onclick=()=>showSheet('set');
+$('#rAuto').onclick=()=>setAuto(!auto);
+$('#rSL').onclick=()=>{P._sl=!P._sl;stage.classList.toggle('sl',P._sl);$('#rSL').classList.toggle('on',P._sl);toast(P._sl?'Прокрутка заблокирована':'Прокрутка разблокирована')};
+$('#rLock').onclick=()=>{setLock(true);toast('Нажатия заблокированы. Для разблокировки удерживайте кнопку внизу')};
+$('#rFS').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Полный экран недоступен')}};
+$('#rHide').onclick=()=>{$('#rd').classList.add('noui');setTimeout(()=>{applyView();scrollToCur(true,true)},50)};
+$('#rShow').onclick=()=>{$('#rd').classList.remove('noui');setTimeout(()=>{applyView();scrollToCur(true,true)},50)};
+$('#rHere').onclick=()=>{scrollToCur(true)};
+$('#cPlay').onclick=playBtn;$('#cStop').onclick=()=>{if(state!=='idle'||true){stopAll();toast('Остановлено. Позиция сохранена — «Начать» продолжит отсюда')}};
+$('#cPW').onclick=prevW;$('#cNW').onclick=nextW;$('#cRW').onclick=repWord;$('#cRS').onclick=repSent;
+$('#cPS').onclick=prevS;$('#cNS').onclick=nextS;$('#cPP').onclick=prevP;$('#cNP').onclick=nextP;
+document.addEventListener('keydown',e=>{if(!inReader||!$('#sheet').hidden||!$('#dlg').hidden)return;const t=e.target.tagName;if(t==='INPUT'||t==='SELECT'||t==='TEXTAREA')return;
+ const m={' ':playBtn,ArrowRight:nextW,ArrowLeft:prevW,ArrowDown:nextS,ArrowUp:prevS,PageDown:nextP,PageUp:prevP,r:repWord,R:repWord,s:repSent,S:repSent,Escape:()=>stopAll()}[e.key];
+ if(m){e.preventDefault();m()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){flush();if(state==='running'){abortRun();setState('paused')}}else if(wake===null&&state==='running')wl(true)});
+window.addEventListener('pagehide',flush);
+
+/* ---------- init ---------- */
+(function init(){
+ if(!metas.length)newDoc('Мой текст','');
+ openDoc(store.get('cur',metas[0].id));
+ computeCum();updateStats();
+ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+ if(!hasTTS)toast('Синтез речи не поддерживается этим браузером — диктант недоступен',null,null,6000);
+})();
+})();
+</script>
+</body>
+</html>
